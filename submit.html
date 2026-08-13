@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#121FA2" />
+  <title>Share a Win — Forty Winks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="form-page">
+  <main class="form-shell">
+    <div class="form-topbar">
+      <a class="mini-brand" href="index.html">FORTY WINKS <span>WINS</span></a>
+      <a class="return-main" href="index.html">← Return to main screen</a>
+    </div>
+    <section class="form-card">
+      <p class="eyebrow">Good things deserve airtime.</p>
+      <h1>What’s your win?</h1>
+      <p class="form-intro">Big, small, team effort or personal milestone — share it and we’ll put it on the office board.</p>
+
+      <form id="winForm" class="win-form">
+        <label>Your win
+          <textarea id="winText" required maxlength="220" placeholder="Tell us what happened…"></textarea>
+          <span class="field-help"><span id="charCount">0</span>/220</span>
+        </label>
+        <div class="form-grid">
+          <label>Your name
+            <input id="personName" type="text" required maxlength="80" placeholder="Jane Smith" />
+          </label>
+          <label>Your department
+            <input id="department" type="text" required maxlength="60" placeholder="e.g. Marketing" />
+          </label>
+        </div>
+        <label>Date of the win
+          <input id="winDate" type="date" required />
+          <span id="periodHint" class="field-help"></span>
+        </label>
+        <p id="submitError" class="form-error is-hidden"></p>
+        <button class="submit-button" type="submit">Share my win</button>
+      </form>
+
+      <div id="submitSuccess" class="success-panel is-hidden" role="status">
+        <div class="success-icon">✓</div>
+        <h2>Nice one.</h2>
+        <p id="successMessage"></p>
+        <div class="success-actions">
+          <button id="submitAnother" class="secondary-button">Share another win</button>
+          <a class="return-main secondary-button" href="index.html">Return to main screen</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>WinsApp.initSubmit();</script>
+</body>
+</html>

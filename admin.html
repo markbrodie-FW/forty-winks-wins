@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#121FA2" />
+  <title>Wins Admin — Forty Winks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="admin-page">
+  <main id="adminApp" class="admin-shell">
+    <header class="admin-header">
+      <div>
+        <a class="mini-brand" href="index.html">FORTY WINKS <span>WINS</span></a>
+        <h1>Wins admin</h1>
+        <p>Edit, hide, delete and browse previous months.</p>
+      </div>
+      <div class="header-actions">
+        <a class="primary-button" href="submit.html">+ Add win</a>
+      </div>
+    </header>
+
+    <section class="admin-toolbar">
+      <input id="adminSearch" type="search" placeholder="Search wins, people or teams…" />
+      <select id="periodFilter"></select>
+      <select id="departmentFilter"></select>
+      <select id="statusFilter">
+        <option value="all">All statuses</option>
+        <option value="active">Active</option>
+        <option value="hidden">Hidden</option>
+      </select>
+    </section>
+
+    <section class="admin-summary"><span id="adminCount">0 wins</span></section>
+    <div id="adminList" class="admin-list"></div>
+  </main>
+
+  <dialog id="editDialog" class="edit-dialog">
+    <form id="editForm" method="dialog">
+      <h2>Edit win</h2>
+      <label>Win<textarea id="editText" maxlength="220" required></textarea></label>
+      <label>Name<input id="editName" required /></label>
+      <label>Department<input id="editDepartment" maxlength="60" required /></label>
+      <label>Date<input id="editDate" type="date" required /></label>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary-button">Cancel</button>
+        <button id="saveEdit" value="default" class="primary-button">Save changes</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>WinsApp.initAdmin();</script>
+</body>
+</html>

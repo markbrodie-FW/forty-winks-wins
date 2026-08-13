@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#121FA2" />
+  <title>Forty Winks Wins</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="display-page">
+  <main id="app" class="display-shell" aria-live="polite">
+    <section id="listView" class="screen screen-list">
+      <header class="display-header">
+        <div>
+          <div class="eyebrow">Forty Winks</div>
+          <h1 id="displayTitle">Our wins</h1>
+        </div>
+        <div class="header-actions">
+          <button class="ghost-button" data-action="celebrate">Celebrate mode</button>
+          <a class="primary-button" href="submit.html">+ Add a win</a>
+        </div>
+      </header>
+
+      <section class="wins-board" aria-label="Current wins">
+        <div class="wins-board-head">
+          <span>WIN</span><span>WHO</span><span>TEAM</span>
+        </div>
+        <div id="winsRows" class="wins-rows"></div>
+      </section>
+
+      <footer class="display-footer">
+        <div class="stat-strip">
+          <div><span id="winCount" class="stat-number">0</span><span class="stat-label">wins</span></div>
+          <div><span id="departmentCount" class="stat-number">0</span><span class="stat-label">teams</span></div>
+        </div>
+        <div class="footer-progress">
+          <p>Scroll to browse. This board returns to celebration mode automatically.</p>
+        </div>
+      </footer>
+    </section>
+
+    <section id="celebrationView" class="screen screen-celebration is-hidden">
+      <header class="celebration-topbar">
+        <div id="celebrationMonth" class="celebration-period"></div>
+      </header>
+      <div class="celebration-content">
+        <blockquote id="celebrationText" class="celebration-text"></blockquote>
+        <div class="celebration-meta"><strong id="celebrationName"></strong><span id="celebrationDepartment"></span></div>
+      </div>
+      <footer class="celebration-footer">
+        <span id="celebrationCounter"></span>
+        <span>Tap to see all wins</span>
+      </footer>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>WinsApp.initDisplay();</script>
+</body>
+</html>
