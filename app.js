@@ -55,6 +55,33 @@
     }).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   }
 
+  function fitCelebrationText(el){
+    if(!el)return;
+    const text=(el.textContent||'').trim();
+    const length=text.length;
+    let vw=9.4;
+    if(length>180) vw=4.7;
+    else if(length>145) vw=5.4;
+    else if(length>110) vw=6.2;
+    else if(length>80) vw=7.1;
+    else if(length>50) vw=8.1;
+    el.style.fontSize=`clamp(48px,${vw}vw,200px)`;
+
+    // Character count gets us close; this second pass catches unusually wide words/line wraps.
+    requestAnimationFrame(()=>{
+      const container=el.closest('.celebration-content');
+      if(!container)return;
+      const maxHeight=Math.min(window.innerHeight*.58,container.clientHeight*.78);
+      let size=parseFloat(getComputedStyle(el).fontSize);
+      let attempts=0;
+      while(el.scrollHeight>maxHeight && size>48 && attempts<12){
+        size*=.9;
+        el.style.fontSize=`${size}px`;
+        attempts++;
+      }
+    });
+  }
+
   function setError(target,message){ if(target){target.textContent=message;target.classList.remove('is-hidden');} }
 
   async function initDisplay(){
@@ -78,8 +105,10 @@
     function renderCelebration(){
       const wins=getLiveWins();
       const dateEl=document.querySelector('#celebrationDate');
+      const textEl=document.querySelector('#celebrationText');
       if(!wins.length){
-        document.querySelector('#celebrationText').textContent='Your next win starts here.';
+        textEl.textContent='Your next win starts here.';
+        fitCelebrationText(textEl);
         document.querySelector('#celebrationName').textContent='';
         document.querySelector('#celebrationDepartment').textContent='';
         if(dateEl) dateEl.textContent='';
@@ -88,7 +117,8 @@
       }
       if(celIndex>=wins.length)celIndex=0;
       const w=wins[celIndex];
-      document.querySelector('#celebrationText').textContent=w.text;
+      textEl.textContent=w.text;
+      fitCelebrationText(textEl);
       document.querySelector('#celebrationName').textContent=w.name;
       document.querySelector('#celebrationDepartment').textContent=w.department;
       if(dateEl) dateEl.textContent=parseDate(w.date).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
@@ -105,6 +135,7 @@
     function resetIdle(){clearTimeout(idleTimer);idleTimer=setTimeout(showCelebrate,(C.idleSeconds||60)*1000);}
 
     await refresh();
+    window.addEventListener('resize',()=>fitCelebrationText(document.querySelector('#celebrationText')));
     ['pointerdown','touchstart','keydown'].forEach(evt=>document.addEventListener(evt,()=>{if(!celView.classList.contains('is-hidden'))showList();else resetIdle();},{passive:true}));
     document.querySelector('[data-action="celebrate"]').addEventListener('click',e=>{e.stopPropagation();showCelebrate();});
     if(sb){ sb.channel('wins-display').on('postgres_changes',{event:'*',schema:'public',table:'wins'},()=>refresh()).subscribe(); }
@@ -115,29 +146,16 @@
     const prompt=document.querySelector('#displayModePrompt');
     const button=document.querySelector('#enterDisplayMode');
     if(!prompt||!button)return;
-
     const fullscreenElement=()=>document.fullscreenElement||document.webkitFullscreenElement;
     const updatePrompt=()=>prompt.classList.toggle('is-hidden',!!fullscreenElement());
-
     async function enterFullscreen(e){
       if(e){e.preventDefault();e.stopPropagation();}
-      const el=document.documentElement;
-      button.disabled=true;
-      try{
-        if(el.requestFullscreen) await el.requestFullscreen({navigationUI:'hide'});
-        else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      }catch(err){
-        console.warn('Fullscreen request was blocked by this browser.',err);
-      }finally{
-        button.disabled=false;
-        updatePrompt();
-      }
+      const el=document.documentElement;button.disabled=true;
+      try{if(el.requestFullscreen) await el.requestFullscreen({navigationUI:'hide'});else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();}
+      catch(err){console.warn('Fullscreen request was blocked by this browser.',err);}
+      finally{button.disabled=false;updatePrompt();}
     }
-
-    button.addEventListener('click',enterFullscreen);
-    document.addEventListener('fullscreenchange',updatePrompt);
-    document.addEventListener('webkitfullscreenchange',updatePrompt);
-    updatePrompt();
+    button.addEventListener('click',enterFullscreen);document.addEventListener('fullscreenchange',updatePrompt);document.addEventListener('webkitfullscreenchange',updatePrompt);updatePrompt();
   }
 
   async function initSubmit(){
@@ -148,69 +166,30 @@
     function count(){document.querySelector('#charCount').textContent=text.value.length;}
     date.addEventListener('change',updateHint);text.addEventListener('input',count);updateHint();count();
     form.addEventListener('submit',async e=>{
-      e.preventDefault();
-      if(errorEl) errorEl.classList.add('is-hidden');
+      e.preventDefault();if(errorEl) errorEl.classList.add('is-hidden');
       const row={text:text.value.trim(),name:document.querySelector('#personName').value.trim(),department:document.querySelector('#department').value.trim(),date:date.value};
       if(!row.text||!row.name||!row.department||!row.date)return;
       submitButton.disabled=true;submitButton.textContent='Sharing…';
-      try{
-        await Store.add(row);
-        const p=periodFor(row.date);
-        form.classList.add('is-hidden');
-        document.querySelector('#successMessage').textContent=`Your win has been added to ${p.label} and is now live on the board.`;
-        document.querySelector('#submitSuccess').classList.remove('is-hidden');
-      }catch(err){console.error(err);setError(errorEl,'Something went wrong. Please try again.');}
+      try{await Store.add(row);const p=periodFor(row.date);form.classList.add('is-hidden');document.querySelector('#successMessage').textContent=`Your win has been added to ${p.label} and is now live on the board.`;document.querySelector('#submitSuccess').classList.remove('is-hidden');}
+      catch(err){console.error(err);setError(errorEl,'Something went wrong. Please try again.');}
       finally{submitButton.disabled=false;submitButton.textContent='Share my win';}
     });
     document.querySelector('#submitAnother').addEventListener('click',()=>{form.reset();date.value=isoDate(new Date());updateHint();count();document.querySelector('#submitSuccess').classList.add('is-hidden');form.classList.remove('is-hidden');text.focus();});
   }
 
-  function getPeriods(rows){
-    const map=new Map();
-    rows.forEach(r=>{const p=periodFor(r.date);map.set(p.key,p);});
-    const current=periodFor(new Date());
-    map.set(current.key,current);
-    return [...map.values()].sort((a,b)=>b.month-a.month);
-  }
-
-  async function initAdmin(){
-    await startAdmin();
-  }
-
+  function getPeriods(rows){const map=new Map();rows.forEach(r=>{const p=periodFor(r.date);map.set(p.key,p);});const current=periodFor(new Date());map.set(current.key,current);return [...map.values()].sort((a,b)=>b.month-a.month);}
+  async function initAdmin(){await startAdmin();}
   async function startAdmin(){
     const list=document.querySelector('#adminList'), search=document.querySelector('#adminSearch'), pFilter=document.querySelector('#periodFilter'), dFilter=document.querySelector('#departmentFilter'), sFilter=document.querySelector('#statusFilter');
     const dialog=document.querySelector('#editDialog'); let editing=null, allRows=[];
-
     function fillPeriods(){const periods=getPeriods(allRows);const selected=pFilter.value||'all';pFilter.innerHTML='<option value="all">All months</option>'+periods.map(p=>`<option value="${p.key}">${esc(p.label)}</option>`).join('');pFilter.value=[...pFilter.options].some(o=>o.value===selected)?selected:'all';}
     function fillDepartments(){const selected=dFilter.value||'all';const deps=[...new Set(allRows.map(r=>r.department).filter(Boolean))].sort((a,b)=>a.localeCompare(b));dFilter.innerHTML='<option value="all">All departments</option>'+deps.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');dFilter.value=[...dFilter.options].some(o=>o.value===selected)?selected:'all';}
-    function render(){
-      fillPeriods();fillDepartments();
-      const q=search.value.trim().toLowerCase();
-      let rows=allRows.filter(r=>{const p=periodFor(r.date);return (pFilter.value==='all'||p.key===pFilter.value)&&(dFilter.value==='all'||r.department===dFilter.value)&&(sFilter.value==='all'||r.status===sFilter.value)&&(!q||`${r.text} ${r.name} ${r.department}`.toLowerCase().includes(q));});
-      document.querySelector('#adminCount').textContent=`${rows.length} win${rows.length===1?'':'s'}`;
-      list.innerHTML=rows.length?rows.map(r=>`<article class="admin-item ${r.status==='hidden'?'is-hidden-win':''}" data-id="${r.id}"><div><h3>${esc(r.text)}</h3><div class="admin-meta">${esc(r.name)} · ${esc(r.department)} · ${parseDate(r.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div></div><div><span class="status-pill ${r.status==='hidden'?'hidden':''}">${r.status}</span></div><div class="admin-actions"><button class="edit">Edit</button><button class="hide">${r.status==='hidden'?'Show':'Hide'}</button><button class="delete">Delete</button></div></article>`).join(''):'<div class="form-card"><h2>No wins found.</h2><p>Try changing the filters.</p></div>';
-    }
+    function render(){fillPeriods();fillDepartments();const q=search.value.trim().toLowerCase();let rows=allRows.filter(r=>{const p=periodFor(r.date);return (pFilter.value==='all'||p.key===pFilter.value)&&(dFilter.value==='all'||r.department===dFilter.value)&&(sFilter.value==='all'||r.status===sFilter.value)&&(!q||`${r.text} ${r.name} ${r.department}`.toLowerCase().includes(q));});document.querySelector('#adminCount').textContent=`${rows.length} win${rows.length===1?'':'s'}`;list.innerHTML=rows.length?rows.map(r=>`<article class="admin-item ${r.status==='hidden'?'is-hidden-win':''}" data-id="${r.id}"><div><h3>${esc(r.text)}</h3><div class="admin-meta">${esc(r.name)} · ${esc(r.department)} · ${parseDate(r.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div></div><div><span class="status-pill ${r.status==='hidden'?'hidden':''}">${r.status}</span></div><div class="admin-actions"><button class="edit">Edit</button><button class="hide">${r.status==='hidden'?'Show':'Hide'}</button><button class="delete">Delete</button></div></article>`).join(''):'<div class="form-card"><h2>No wins found.</h2><p>Try changing the filters.</p></div>';}
     async function refresh(){try{allRows=await Store.all(true);render();}catch(err){console.error(err);list.innerHTML='<div class="form-card"><h2>Couldn’t load admin data.</h2><p>Please check the connection and try again.</p></div>';}}
     ['input','change'].forEach(evt=>{search.addEventListener(evt,render);pFilter.addEventListener(evt,render);dFilter.addEventListener(evt,render);sFilter.addEventListener(evt,render);});
-    list.addEventListener('click',async e=>{
-      const item=e.target.closest('.admin-item');if(!item)return;
-      const id=item.dataset.id,row=allRows.find(r=>r.id===id);if(!row)return;
-      if(e.target.classList.contains('edit')){editing=id;document.querySelector('#editText').value=row.text;document.querySelector('#editName').value=row.name;document.querySelector('#editDepartment').value=row.department;document.querySelector('#editDate').value=row.date;dialog.showModal();return;}
-      try{
-        if(e.target.classList.contains('hide')) await Store.update(id,{status:row.status==='hidden'?'active':'hidden'});
-        if(e.target.classList.contains('delete') && confirm('Delete this win permanently?')) await Store.remove(id);
-        await refresh();
-      }catch(err){console.error(err);alert('That change could not be saved.');}
-    });
-    document.querySelector('#editForm').addEventListener('submit',async e=>{
-      if(e.submitter && e.submitter.value==='cancel')return;
-      if(!editing)return;
-      e.preventDefault();
-      try{await Store.update(editing,{text:document.querySelector('#editText').value.trim(),name:document.querySelector('#editName').value.trim(),department:document.querySelector('#editDepartment').value.trim(),date:document.querySelector('#editDate').value});editing=null;dialog.close();await refresh();}catch(err){console.error(err);alert('Changes could not be saved.');}
-    });
-    if(sb){ sb.channel('wins-admin').on('postgres_changes',{event:'*',schema:'public',table:'wins'},()=>refresh()).subscribe(); }
-    await refresh();
+    list.addEventListener('click',async e=>{const item=e.target.closest('.admin-item');if(!item)return;const id=item.dataset.id,row=allRows.find(r=>r.id===id);if(!row)return;if(e.target.classList.contains('edit')){editing=id;document.querySelector('#editText').value=row.text;document.querySelector('#editName').value=row.name;document.querySelector('#editDepartment').value=row.department;document.querySelector('#editDate').value=row.date;dialog.showModal();return;}try{if(e.target.classList.contains('hide')) await Store.update(id,{status:row.status==='hidden'?'active':'hidden'});if(e.target.classList.contains('delete') && confirm('Delete this win permanently?')) await Store.remove(id);await refresh();}catch(err){console.error(err);alert('That change could not be saved.');}});
+    document.querySelector('#editForm').addEventListener('submit',async e=>{if(e.submitter && e.submitter.value==='cancel')return;if(!editing)return;e.preventDefault();try{await Store.update(editing,{text:document.querySelector('#editText').value.trim(),name:document.querySelector('#editName').value.trim(),department:document.querySelector('#editDepartment').value.trim(),date:document.querySelector('#editDate').value});editing=null;dialog.close();await refresh();}catch(err){console.error(err);alert('Changes could not be saved.');}});
+    if(sb){sb.channel('wins-admin').on('postgres_changes',{event:'*',schema:'public',table:'wins'},()=>refresh()).subscribe();}await refresh();
   }
-
   window.WinsApp={initDisplay,initDisplayMode,initSubmit,initAdmin,periodFor,Store};
 })();
