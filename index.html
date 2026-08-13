@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260813-stickers1" />
+  <link rel="stylesheet" href="styles.css?v=20260813-stickers2" />
   <style>
     .celebration-date{margin-top:.55em;font-size:clamp(14px,1.15vw,24px);font-weight:600;color:var(--clear-sky-half)}
     .reload-button{width:32px;height:32px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(255,255,255,.08);color:var(--clear-sky-half);display:inline-grid;place-items:center;cursor:pointer;padding:0;flex:0 0 auto}
@@ -18,12 +18,12 @@
     .celebration-sticker{position:absolute;width:clamp(180px,19vw,430px);height:auto;transform-origin:center;filter:none;transition:opacity .35s ease,transform .45s ease}
     .celebration-sticker.is-small{width:clamp(130px,14vw,320px)}
     .celebration-sticker.is-tiny{width:clamp(100px,10vw,240px)}
-    .celebration-sticker.pos-a{top:20%;right:-4%;transform:rotate(12deg)}
-    .celebration-sticker.pos-b{top:35%;left:-5%;transform:rotate(-13deg)}
-    .celebration-sticker.pos-c{top:48%;right:-6%;transform:rotate(-8deg)}
-    .celebration-sticker.pos-d{top:25%;left:7%;transform:rotate(9deg)}
-    .celebration-sticker.pos-e{top:58%;left:-4%;transform:rotate(14deg)}
-    .celebration-sticker.pos-f{top:18%;right:12%;transform:rotate(-10deg)}
+    .celebration-sticker.pos-a{top:7%;right:-4%;transform:rotate(12deg)}
+    .celebration-sticker.pos-b{top:10%;left:-5%;transform:rotate(-13deg)}
+    .celebration-sticker.pos-c{bottom:10%;right:-6%;transform:rotate(-8deg)}
+    .celebration-sticker.pos-d{top:8%;left:8%;transform:rotate(9deg)}
+    .celebration-sticker.pos-e{bottom:9%;left:-4%;transform:rotate(14deg)}
+    .celebration-sticker.pos-f{bottom:11%;right:10%;transform:rotate(-10deg)}
     .screen-celebration.fade .celebration-sticker{opacity:0;transform:scale(.9) rotate(0deg)}
     .celebration-content{z-index:4}
     .celebration-topbar,.celebration-footer{z-index:7}
@@ -33,6 +33,12 @@
       .celebration-sticker{width:clamp(120px,33vw,190px)}
       .celebration-sticker.is-small{width:clamp(95px,26vw,150px)}
       .celebration-sticker.is-tiny{width:clamp(78px,21vw,120px)}
+      .celebration-sticker.pos-a{top:7%;right:-8%}
+      .celebration-sticker.pos-b{top:10%;left:-9%}
+      .celebration-sticker.pos-c{bottom:10%;right:-9%}
+      .celebration-sticker.pos-d{top:8%;left:5%}
+      .celebration-sticker.pos-e{bottom:9%;left:-8%}
+      .celebration-sticker.pos-f{bottom:11%;right:6%}
     }
   </style>
 </head>
@@ -66,8 +72,8 @@
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260813-stickers1"></script>
-  <script src="app.js?v=20260813-stickers1"></script>
+  <script src="config.js?v=20260813-stickers2"></script>
+  <script src="app.js?v=20260813-stickers2"></script>
   <script>WinsApp.initDisplay(); WinsApp.initDisplayMode();</script>
 </body>
 </html>
