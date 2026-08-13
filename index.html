@@ -8,21 +8,37 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260813-rolling30" />
+  <link rel="stylesheet" href="styles.css?v=20260813-stickers1" />
   <style>
     .celebration-date{margin-top:.55em;font-size:clamp(14px,1.15vw,24px);font-weight:600;color:var(--clear-sky-half)}
     .reload-button{width:32px;height:32px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(255,255,255,.08);color:var(--clear-sky-half);display:inline-grid;place-items:center;cursor:pointer;padding:0;flex:0 0 auto}
-    .reload-button svg{width:14px;height:14px;display:block}
-    .reload-button:active{transform:scale(.96)}
-    @media(max-width:760px){.celebration-date{font-size:11px}.reload-button{width:26px;height:26px}.reload-button svg{width:12px;height:12px}}
+    .reload-button svg{width:14px;height:14px;display:block}.reload-button:active{transform:scale(.96)}
+
+    .celebration-stickers{position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden}
+    .celebration-sticker{position:absolute;width:clamp(180px,19vw,430px);height:auto;transform-origin:center;filter:none;transition:opacity .35s ease,transform .45s ease}
+    .celebration-sticker.is-small{width:clamp(130px,14vw,320px)}
+    .celebration-sticker.is-tiny{width:clamp(100px,10vw,240px)}
+    .celebration-sticker.pos-a{top:20%;right:-4%;transform:rotate(12deg)}
+    .celebration-sticker.pos-b{top:35%;left:-5%;transform:rotate(-13deg)}
+    .celebration-sticker.pos-c{top:48%;right:-6%;transform:rotate(-8deg)}
+    .celebration-sticker.pos-d{top:25%;left:7%;transform:rotate(9deg)}
+    .celebration-sticker.pos-e{top:58%;left:-4%;transform:rotate(14deg)}
+    .celebration-sticker.pos-f{top:18%;right:12%;transform:rotate(-10deg)}
+    .screen-celebration.fade .celebration-sticker{opacity:0;transform:scale(.9) rotate(0deg)}
+    .celebration-content{z-index:4}
+    .celebration-topbar,.celebration-footer{z-index:7}
+
+    @media(max-width:760px){
+      .celebration-date{font-size:11px}.reload-button{width:26px;height:26px}.reload-button svg{width:12px;height:12px}
+      .celebration-sticker{width:clamp(120px,33vw,190px)}
+      .celebration-sticker.is-small{width:clamp(95px,26vw,150px)}
+      .celebration-sticker.is-tiny{width:clamp(78px,21vw,120px)}
+    }
   </style>
 </head>
 <body class="display-page">
   <div id="displayModePrompt" class="display-mode-prompt" role="dialog" aria-modal="true" aria-labelledby="displayModeTitle">
-    <button id="enterDisplayMode" class="display-mode-button" type="button">
-      <span id="displayModeTitle">Tap to enter display mode</span>
-      <small>Fullscreen display</small>
-    </button>
+    <button id="enterDisplayMode" class="display-mode-button" type="button"><span id="displayModeTitle">Tap to enter display mode</span><small>Fullscreen display</small></button>
   </div>
   <main id="app" class="display-shell" aria-live="polite">
     <section id="listView" class="screen screen-list">
@@ -31,8 +47,7 @@
         <div class="header-actions"><button class="ghost-button" data-action="celebrate">Celebrate mode</button><a class="primary-button" href="submit.html">+ Add a win</a></div>
       </header>
       <section class="wins-board" aria-label="Current wins">
-        <div class="wins-board-head"><span>WIN</span><span>WHO</span><span>TEAM</span></div>
-        <div id="winsRows" class="wins-rows"></div>
+        <div class="wins-board-head"><span>WIN</span><span>WHO</span><span>TEAM</span></div><div id="winsRows" class="wins-rows"></div>
       </section>
       <footer class="display-footer">
         <div class="stat-strip"><div><span id="winCount" class="stat-number">0</span><span class="stat-label">wins</span></div><div><span id="departmentCount" class="stat-number">0</span><span class="stat-label">teams</span></div></div>
@@ -46,12 +61,13 @@
         <div class="celebration-meta"><strong id="celebrationName"></strong><span id="celebrationDepartment"></span></div>
         <div id="celebrationDate" class="celebration-date"></div>
       </div>
+      <div id="celebrationStickers" class="celebration-stickers" aria-hidden="true"></div>
       <footer class="celebration-footer"><span id="celebrationCounter"></span><span>Tap to see all wins</span></footer>
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260813-rolling30"></script>
-  <script src="app.js?v=20260813-rolling30"></script>
+  <script src="config.js?v=20260813-stickers1"></script>
+  <script src="app.js?v=20260813-stickers1"></script>
   <script>WinsApp.initDisplay(); WinsApp.initDisplayMode();</script>
 </body>
 </html>
