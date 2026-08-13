@@ -8,7 +8,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260813-rolling30" />
+  <style>
+    .celebration-date{margin-top:.55em;font-size:clamp(14px,1.15vw,24px);font-weight:600;color:var(--clear-sky-half)}
+    @media(max-width:760px){.celebration-date{font-size:11px}}
+  </style>
 </head>
 <body class="display-page">
   <div id="displayModePrompt" class="display-mode-prompt" role="dialog" aria-modal="true" aria-labelledby="displayModeTitle">
@@ -17,56 +21,34 @@
       <small>Fullscreen display</small>
     </button>
   </div>
-
   <main id="app" class="display-shell" aria-live="polite">
     <section id="listView" class="screen screen-list">
       <header class="display-header">
-        <div>
-          <div class="eyebrow">Forty Winks</div>
-          <h1 id="displayTitle">Our wins</h1>
-        </div>
-        <div class="header-actions">
-          <button class="ghost-button" data-action="celebrate">Celebrate mode</button>
-          <a class="primary-button" href="submit.html">+ Add a win</a>
-        </div>
+        <div><div class="eyebrow">Forty Winks</div><h1 id="displayTitle">Our wins</h1></div>
+        <div class="header-actions"><button class="ghost-button" data-action="celebrate">Celebrate mode</button><a class="primary-button" href="submit.html">+ Add a win</a></div>
       </header>
-
       <section class="wins-board" aria-label="Current wins">
-        <div class="wins-board-head">
-          <span>WIN</span><span>WHO</span><span>TEAM</span>
-        </div>
+        <div class="wins-board-head"><span>WIN</span><span>WHO</span><span>TEAM</span></div>
         <div id="winsRows" class="wins-rows"></div>
       </section>
-
       <footer class="display-footer">
-        <div class="stat-strip">
-          <div><span id="winCount" class="stat-number">0</span><span class="stat-label">wins</span></div>
-          <div><span id="departmentCount" class="stat-number">0</span><span class="stat-label">teams</span></div>
-        </div>
-        <div class="footer-progress">
-          <p>Scroll to browse. This board returns to celebration mode automatically.</p>
-        </div>
+        <div class="stat-strip"><div><span id="winCount" class="stat-number">0</span><span class="stat-label">wins</span></div><div><span id="departmentCount" class="stat-number">0</span><span class="stat-label">teams</span></div></div>
+        <div class="footer-progress"><p>Scroll to browse. This board returns to celebration mode automatically.</p></div>
       </footer>
     </section>
-
     <section id="celebrationView" class="screen screen-celebration is-hidden">
-      <header class="celebration-topbar">
-        <div id="celebrationMonth" class="celebration-period"></div>
-      </header>
+      <header class="celebration-topbar"><div id="celebrationMonth" class="celebration-period"></div></header>
       <div class="celebration-content">
         <blockquote id="celebrationText" class="celebration-text"></blockquote>
         <div class="celebration-meta"><strong id="celebrationName"></strong><span id="celebrationDepartment"></span></div>
+        <div id="celebrationDate" class="celebration-date"></div>
       </div>
-      <footer class="celebration-footer">
-        <span id="celebrationCounter"></span>
-        <span>Tap to see all wins</span>
-      </footer>
+      <footer class="celebration-footer"><span id="celebrationCounter"></span><span>Tap to see all wins</span></footer>
     </section>
   </main>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="config.js?v=20260813-rolling30"></script>
+  <script src="app.js?v=20260813-rolling30"></script>
   <script>WinsApp.initDisplay(); WinsApp.initDisplayMode();</script>
 </body>
 </html>
