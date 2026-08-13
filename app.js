@@ -8,20 +8,10 @@
 
   function periodFor(dateInput){
     const d = typeof dateInput === 'string' ? parseDate(dateInput) : new Date(dateInput);
-    const startDay = C.cycleStartDay || 15;
     const monthDate = new Date(d.getFullYear(), d.getMonth(), 1);
-    const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), startDay);
-    const end = new Date(monthDate.getFullYear(), monthDate.getMonth()+1, startDay-1);
     const label = monthDate.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
     const monthName = monthDate.toLocaleDateString('en-AU',{month:'long'});
-    return {month:monthDate,start,end,key:`${monthDate.getFullYear()}-${pad(monthDate.getMonth()+1)}`,label,monthName};
-  }
-
-  function currentDisplayPeriod(dateInput=new Date()){
-    const d = new Date(dateInput);
-    const startDay = C.cycleStartDay || 15;
-    const monthDate = d.getDate() >= startDay ? new Date(d.getFullYear(), d.getMonth(), 1) : new Date(d.getFullYear(), d.getMonth()-1, 1);
-    return periodFor(monthDate);
+    return {month:monthDate,key:`${monthDate.getFullYear()}-${pad(monthDate.getMonth()+1)}`,label,monthName};
   }
 
   const mapRow = r => ({id:r.id,text:r.win_text,name:r.person_name,department:r.department,date:r.win_date,status:r.status,createdAt:r.created_at});
@@ -29,15 +19,17 @@
   const Store = {
     async all(includeHidden=false){
       if(!sb) throw new Error('Supabase client not available.');
-      let q = sb.from('wins').select('*').order('win_date',{ascending:false}).order('created_at',{ascending:false});
+      let q = sb.from('wins').select('*').order('created_at',{ascending:false}).order('win_date',{ascending:false});
       if(!includeHidden) q = q.eq('status','active');
       const {data,error}=await q;
       if(error) throw error;
       return (data||[]).map(mapRow);
     },
     async add(row){
-      const {error}=await sb.from('wins').insert({win_text:row.text,person_name:row.name,department:row.department,win_date:row.date});
+      const {data,error}=await sb.from('wins').insert({win_text:row.text,person_name:row.name,department:row.department,win_date:row.date}).select('id').single();
       if(error) throw error;
+      if(!data?.id) throw new Error('Supabase did not confirm the new win.');
+      return data;
     },
     async update(id,patch){
       const dbPatch={};
@@ -55,8 +47,12 @@
     }
   };
 
-  function winsForPeriod(rows,p){
-    return rows.filter(w=>{const d=parseDate(w.date);return d.getFullYear()===p.month.getFullYear()&&d.getMonth()===p.month.getMonth();}).sort((a,b)=>parseDate(b.date)-parseDate(a.date));
+  function recentWins(rows, now=new Date()){
+    const cutoff = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    return rows.filter(w=>{
+      const created = new Date(w.createdAt);
+      return !Number.isNaN(created.getTime()) && created >= cutoff && created <= now;
+    }).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   }
 
   function setError(target,message){ if(target){target.textContent=message;target.classList.remove('is-hidden');} }
@@ -64,35 +60,48 @@
   async function initDisplay(){
     const listView=document.querySelector('#listView'), celView=document.querySelector('#celebrationView');
     const rowsEl=document.querySelector('#winsRows');
-    const p=currentDisplayPeriod(new Date());
-    document.querySelector('#displayTitle').textContent=`Our ${p.monthName} wins`;
-    document.querySelector('#celebrationMonth').textContent=`${p.monthName} wins`;
+    const currentMonth=periodFor(new Date());
+    document.querySelector('#displayTitle').textContent=`Our ${currentMonth.monthName} wins`;
+    document.querySelector('#celebrationMonth').textContent=`${currentMonth.monthName} wins`;
     let allRows=[], celIndex=0, celTimer, idleTimer;
 
+    function getLiveWins(){ return recentWins(allRows,new Date()); }
+
     function render(){
-      const wins=winsForPeriod(allRows,p);
+      const wins=getLiveWins();
       rowsEl.innerHTML=wins.length?wins.map(w=>`<article class="win-row"><div class="win-text">${esc(w.text)}</div><div class="win-person">${esc(w.name)}</div><div class="win-team">${esc(w.department)}</div></article>`).join(''):`<div class="empty-board"><div><h2>First win incoming.</h2><p>Tap “Add a win” to get the board started.</p></div></div>`;
       document.querySelector('#winCount').textContent=wins.length;
       document.querySelector('#departmentCount').textContent=new Set(wins.map(w=>w.department.trim().toLowerCase()).filter(Boolean)).size;
       renderCelebration();
     }
+
     function renderCelebration(){
-      const wins=winsForPeriod(allRows,p);
-      if(!wins.length){document.querySelector('#celebrationText').textContent='Your next win starts here.';document.querySelector('#celebrationName').textContent='';document.querySelector('#celebrationDepartment').textContent='';document.querySelector('#celebrationCounter').textContent='0 wins';return;}
+      const wins=getLiveWins();
+      const dateEl=document.querySelector('#celebrationDate');
+      if(!wins.length){
+        document.querySelector('#celebrationText').textContent='Your next win starts here.';
+        document.querySelector('#celebrationName').textContent='';
+        document.querySelector('#celebrationDepartment').textContent='';
+        if(dateEl) dateEl.textContent='';
+        document.querySelector('#celebrationCounter').textContent='0 wins';
+        return;
+      }
       if(celIndex>=wins.length)celIndex=0;
       const w=wins[celIndex];
       document.querySelector('#celebrationText').textContent=w.text;
       document.querySelector('#celebrationName').textContent=w.name;
       document.querySelector('#celebrationDepartment').textContent=w.department;
+      if(dateEl) dateEl.textContent=parseDate(w.date).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
       document.querySelector('#celebrationCounter').textContent=`${celIndex+1} of ${wins.length} wins`;
     }
+
     async function refresh(){
       try{ allRows=await Store.all(false); render(); }
       catch(err){ console.error(err); rowsEl.innerHTML='<div class="empty-board"><div><h2>Couldn’t load wins.</h2><p>Please check the connection and refresh.</p></div></div>'; }
     }
     function showList(){clearInterval(celTimer);celView.classList.add('is-hidden');listView.classList.remove('is-hidden');resetIdle();}
     function showCelebrate(){clearTimeout(idleTimer);listView.classList.add('is-hidden');celView.classList.remove('is-hidden');renderCelebration();startCelebrationTimer();}
-    function startCelebrationTimer(){clearInterval(celTimer);celTimer=setInterval(()=>{const wins=winsForPeriod(allRows,p);if(!wins.length)return;celView.classList.add('fade');setTimeout(()=>{celIndex=(celIndex+1)%wins.length;renderCelebration();celView.classList.remove('fade');},450);},(C.celebrationSeconds||9)*1000);}
+    function startCelebrationTimer(){clearInterval(celTimer);celTimer=setInterval(()=>{const wins=getLiveWins();if(!wins.length)return;celView.classList.add('fade');setTimeout(()=>{celIndex=(celIndex+1)%wins.length;renderCelebration();celView.classList.remove('fade');},450);},(C.celebrationSeconds||9)*1000);}
     function resetIdle(){clearTimeout(idleTimer);idleTimer=setTimeout(showCelebrate,(C.idleSeconds||60)*1000);}
 
     await refresh();
@@ -135,7 +144,7 @@
     const date=document.querySelector('#winDate'); date.value=isoDate(new Date());
     const hint=document.querySelector('#periodHint'), text=document.querySelector('#winText'), form=document.querySelector('#winForm'), submitButton=form.querySelector('button[type="submit"]');
     const errorEl=document.querySelector('#submitError');
-    function updateHint(){ const p=periodFor(date.value||isoDate(new Date())); hint.textContent=`This will appear in ${p.monthName} wins.`; }
+    function updateHint(){ const p=periodFor(date.value||isoDate(new Date())); hint.textContent=`Filed under ${p.monthName} wins. It will appear on the board straight away.`; }
     function count(){document.querySelector('#charCount').textContent=text.value.length;}
     date.addEventListener('change',updateHint);text.addEventListener('input',count);updateHint();count();
     form.addEventListener('submit',async e=>{
@@ -148,7 +157,7 @@
         await Store.add(row);
         const p=periodFor(row.date);
         form.classList.add('is-hidden');
-        document.querySelector('#successMessage').textContent=`Your win has been added to ${p.label}.`;
+        document.querySelector('#successMessage').textContent=`Your win has been added to ${p.label} and is now live on the board.`;
         document.querySelector('#submitSuccess').classList.remove('is-hidden');
       }catch(err){console.error(err);setError(errorEl,'Something went wrong. Please try again.');}
       finally{submitButton.disabled=false;submitButton.textContent='Share my win';}
@@ -157,7 +166,11 @@
   }
 
   function getPeriods(rows){
-    const map=new Map(); rows.forEach(r=>{const p=periodFor(r.date);map.set(p.key,p);}); const current=currentDisplayPeriod(new Date());map.set(current.key,current);return [...map.values()].sort((a,b)=>b.month-a.month);
+    const map=new Map();
+    rows.forEach(r=>{const p=periodFor(r.date);map.set(p.key,p);});
+    const current=periodFor(new Date());
+    map.set(current.key,current);
+    return [...map.values()].sort((a,b)=>b.month-a.month);
   }
 
   async function initAdmin(){
