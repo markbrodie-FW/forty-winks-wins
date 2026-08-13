@@ -102,6 +102,35 @@
     resetIdle();
   }
 
+  function initDisplayMode(){
+    const prompt=document.querySelector('#displayModePrompt');
+    const button=document.querySelector('#enterDisplayMode');
+    if(!prompt||!button)return;
+
+    const fullscreenElement=()=>document.fullscreenElement||document.webkitFullscreenElement;
+    const updatePrompt=()=>prompt.classList.toggle('is-hidden',!!fullscreenElement());
+
+    async function enterFullscreen(e){
+      if(e){e.preventDefault();e.stopPropagation();}
+      const el=document.documentElement;
+      button.disabled=true;
+      try{
+        if(el.requestFullscreen) await el.requestFullscreen({navigationUI:'hide'});
+        else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      }catch(err){
+        console.warn('Fullscreen request was blocked by this browser.',err);
+      }finally{
+        button.disabled=false;
+        updatePrompt();
+      }
+    }
+
+    button.addEventListener('click',enterFullscreen);
+    document.addEventListener('fullscreenchange',updatePrompt);
+    document.addEventListener('webkitfullscreenchange',updatePrompt);
+    updatePrompt();
+  }
+
   async function initSubmit(){
     const date=document.querySelector('#winDate'); date.value=isoDate(new Date());
     const hint=document.querySelector('#periodHint'), text=document.querySelector('#winText'), form=document.querySelector('#winForm'), submitButton=form.querySelector('button[type="submit"]');
@@ -170,5 +199,5 @@
     await refresh();
   }
 
-  window.WinsApp={initDisplay,initSubmit,initAdmin,periodFor,Store};
+  window.WinsApp={initDisplay,initDisplayMode,initSubmit,initAdmin,periodFor,Store};
 })();

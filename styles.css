@@ -76,3 +76,20 @@
 .form-error{margin:0;padding:14px 16px;border:1px solid currentColor;border-radius:12px;font-size:14px;font-weight:600;}
 .admin-login-card{max-width:620px;margin:10vh auto 0;}
 button:disabled{opacity:.55;cursor:wait;}
+
+
+/* Android Chrome display mode */
+.display-page{-webkit-user-select:none;user-select:none;overscroll-behavior:none;touch-action:manipulation}
+.display-page .wins-rows{-webkit-user-select:none;user-select:none;touch-action:pan-y;overscroll-behavior:contain}
+.display-mode-prompt{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:var(--southern-night);color:#fff}
+.display-mode-prompt.is-hidden{display:none}
+.display-mode-button{appearance:none;border:0;background:transparent;color:inherit;display:grid;gap:10px;place-items:center;text-align:center;cursor:pointer;padding:40px;max-width:90vw}
+.display-mode-button span{font-family:var(--font-fw);font-size:clamp(48px,7vw,120px);line-height:.95;font-weight:800;letter-spacing:normal}
+.display-mode-button small{font-family:var(--font-display);font-size:clamp(14px,1.2vw,24px);font-weight:600;color:var(--clear-sky);letter-spacing:normal}
+.display-mode-button:focus-visible{outline:4px solid var(--morning-light);outline-offset:10px;border-radius:18px}
+.display-mode-button:disabled{opacity:.75}
+@media(max-width:760px){
+  .display-mode-button{padding:24px}
+  .display-mode-button span{font-size:clamp(46px,15vw,76px)}
+  .display-mode-button small{font-size:12px}
+}

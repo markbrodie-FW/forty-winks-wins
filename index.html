@@ -11,6 +11,13 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="display-page">
+  <div id="displayModePrompt" class="display-mode-prompt" role="dialog" aria-modal="true" aria-labelledby="displayModeTitle">
+    <button id="enterDisplayMode" class="display-mode-button" type="button">
+      <span id="displayModeTitle">Tap to enter display mode</span>
+      <small>Fullscreen display</small>
+    </button>
+  </div>
+
   <main id="app" class="display-shell" aria-live="polite">
     <section id="listView" class="screen screen-list">
       <header class="display-header">
@@ -60,6 +67,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
-  <script>WinsApp.initDisplay();</script>
+  <script>WinsApp.initDisplay(); WinsApp.initDisplayMode();</script>
 </body>
 </html>
