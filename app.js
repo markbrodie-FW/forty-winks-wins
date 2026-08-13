@@ -5,191 +5,39 @@
   const parseDate = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
   const sb = window.supabase?.createClient(C.supabaseUrl, C.supabasePublishableKey);
+  const STICKERS=['assets/fw-sticker-light-bulb.svg','assets/fw-sticker-winky-face.svg'];
+  const STICKER_LAYOUTS=[['pos-a','pos-b'],['pos-c','pos-d'],['pos-e','pos-f'],['pos-b','pos-f'],['pos-a','pos-e'],['pos-c','pos-b']];
 
-  function periodFor(dateInput){
-    const d = typeof dateInput === 'string' ? parseDate(dateInput) : new Date(dateInput);
-    const monthDate = new Date(d.getFullYear(), d.getMonth(), 1);
-    const label = monthDate.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
-    const monthName = monthDate.toLocaleDateString('en-AU',{month:'long'});
-    return {month:monthDate,key:`${monthDate.getFullYear()}-${pad(monthDate.getMonth()+1)}`,label,monthName};
-  }
-
-  const mapRow = r => ({id:r.id,text:r.win_text,name:r.person_name,department:r.department,date:r.win_date,status:r.status,createdAt:r.created_at});
-
-  const Store = {
-    async all(includeHidden=false){
-      if(!sb) throw new Error('Supabase client not available.');
-      let q = sb.from('wins').select('*').order('created_at',{ascending:false}).order('win_date',{ascending:false});
-      if(!includeHidden) q = q.eq('status','active');
-      const {data,error}=await q;
-      if(error) throw error;
-      return (data||[]).map(mapRow);
-    },
-    async add(row){
-      const {data,error}=await sb.from('wins').insert({win_text:row.text,person_name:row.name,department:row.department,win_date:row.date}).select('id').single();
-      if(error) throw error;
-      if(!data?.id) throw new Error('Supabase did not confirm the new win.');
-      return data;
-    },
-    async update(id,patch){
-      const dbPatch={};
-      if(patch.text!==undefined) dbPatch.win_text=patch.text;
-      if(patch.name!==undefined) dbPatch.person_name=patch.name;
-      if(patch.department!==undefined) dbPatch.department=patch.department;
-      if(patch.date!==undefined) dbPatch.win_date=patch.date;
-      if(patch.status!==undefined) dbPatch.status=patch.status;
-      const {error}=await sb.from('wins').update(dbPatch).eq('id',id);
-      if(error) throw error;
-    },
-    async remove(id){
-      const {error}=await sb.from('wins').delete().eq('id',id);
-      if(error) throw error;
-    }
+  function periodFor(dateInput){const d=typeof dateInput==='string'?parseDate(dateInput):new Date(dateInput);const monthDate=new Date(d.getFullYear(),d.getMonth(),1);const label=monthDate.toLocaleDateString('en-AU',{month:'long',year:'numeric'});const monthName=monthDate.toLocaleDateString('en-AU',{month:'long'});return {month:monthDate,key:`${monthDate.getFullYear()}-${pad(monthDate.getMonth()+1)}`,label,monthName};}
+  const mapRow=r=>({id:r.id,text:r.win_text,name:r.person_name,department:r.department,date:r.win_date,status:r.status,createdAt:r.created_at});
+  const Store={
+    async all(includeHidden=false){if(!sb)throw new Error('Supabase client not available.');let q=sb.from('wins').select('*').order('created_at',{ascending:false}).order('win_date',{ascending:false});if(!includeHidden)q=q.eq('status','active');const {data,error}=await q;if(error)throw error;return(data||[]).map(mapRow);},
+    async add(row){const {data,error}=await sb.from('wins').insert({win_text:row.text,person_name:row.name,department:row.department,win_date:row.date}).select('id').single();if(error)throw error;if(!data?.id)throw new Error('Supabase did not confirm the new win.');return data;},
+    async update(id,patch){const dbPatch={};if(patch.text!==undefined)dbPatch.win_text=patch.text;if(patch.name!==undefined)dbPatch.person_name=patch.name;if(patch.department!==undefined)dbPatch.department=patch.department;if(patch.date!==undefined)dbPatch.win_date=patch.date;if(patch.status!==undefined)dbPatch.status=patch.status;const {error}=await sb.from('wins').update(dbPatch).eq('id',id);if(error)throw error;},
+    async remove(id){const {error}=await sb.from('wins').delete().eq('id',id);if(error)throw error;}
   };
-
-  function recentWins(rows, now=new Date()){
-    const cutoff = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-    return rows.filter(w=>{
-      const created = new Date(w.createdAt);
-      return !Number.isNaN(created.getTime()) && created >= cutoff && created <= now;
-    }).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-  }
-
-  function fitCelebrationText(el){
-    if(!el)return;
-    const text=(el.textContent||'').trim();
-    const length=text.length;
-    let vw=9.4;
-    if(length>180) vw=4.7;
-    else if(length>145) vw=5.4;
-    else if(length>110) vw=6.2;
-    else if(length>80) vw=7.1;
-    else if(length>50) vw=8.1;
-    el.style.fontSize=`clamp(48px,${vw}vw,200px)`;
-
-    // Character count gets us close; this second pass catches unusually wide words/line wraps.
-    requestAnimationFrame(()=>{
-      const container=el.closest('.celebration-content');
-      if(!container)return;
-      const maxHeight=Math.min(window.innerHeight*.58,container.clientHeight*.78);
-      let size=parseFloat(getComputedStyle(el).fontSize);
-      let attempts=0;
-      while(el.scrollHeight>maxHeight && size>48 && attempts<12){
-        size*=.9;
-        el.style.fontSize=`${size}px`;
-        attempts++;
-      }
-    });
-  }
-
-  function setError(target,message){ if(target){target.textContent=message;target.classList.remove('is-hidden');} }
+  function recentWins(rows,now=new Date()){const cutoff=new Date(now.getTime()-(30*24*60*60*1000));return rows.filter(w=>{const created=new Date(w.createdAt);return !Number.isNaN(created.getTime())&&created>=cutoff&&created<=now;}).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));}
+  function fitCelebrationText(el){if(!el)return;const length=(el.textContent||'').trim().length;let vw=9.4;if(length>180)vw=4.7;else if(length>145)vw=5.4;else if(length>110)vw=6.2;else if(length>80)vw=7.1;else if(length>50)vw=8.1;el.style.fontSize=`clamp(48px,${vw}vw,200px)`;requestAnimationFrame(()=>{const container=el.closest('.celebration-content');if(!container)return;const maxHeight=Math.min(window.innerHeight*.58,container.clientHeight*.78);let size=parseFloat(getComputedStyle(el).fontSize),attempts=0;while(el.scrollHeight>maxHeight&&size>48&&attempts<12){size*=.9;el.style.fontSize=`${size}px`;attempts++;}});}
+  function renderStickers(win,index){const layer=document.querySelector('#celebrationStickers');if(!layer)return;if(!win){layer.innerHTML='';return;}const len=(win.text||'').length;const layout=STICKER_LAYOUTS[index%STICKER_LAYOUTS.length];let count=2,sizeClass='';if(len>165){count=1;sizeClass='is-tiny';}else if(len>110){count=1;sizeClass='is-small';}else if(len>75){sizeClass='is-small';}const offset=index%STICKERS.length;layer.innerHTML=layout.slice(0,count).map((pos,i)=>`<img class="celebration-sticker ${pos} ${sizeClass}" src="${STICKERS[(offset+i)%STICKERS.length]}" alt="" />`).join('');}
+  function setError(target,message){if(target){target.textContent=message;target.classList.remove('is-hidden');}}
 
   async function initDisplay(){
-    const listView=document.querySelector('#listView'), celView=document.querySelector('#celebrationView');
-    const rowsEl=document.querySelector('#winsRows');
-    const currentMonth=periodFor(new Date());
-    document.querySelector('#displayTitle').textContent=`Our ${currentMonth.monthName} wins`;
-    document.querySelector('#celebrationMonth').textContent=`${currentMonth.monthName} wins`;
-    let allRows=[], celIndex=0, celTimer, idleTimer;
-
-    function getLiveWins(){ return recentWins(allRows,new Date()); }
-
-    function render(){
-      const wins=getLiveWins();
-      rowsEl.innerHTML=wins.length?wins.map(w=>`<article class="win-row"><div class="win-text">${esc(w.text)}</div><div class="win-person">${esc(w.name)}</div><div class="win-team">${esc(w.department)}</div></article>`).join(''):`<div class="empty-board"><div><h2>First win incoming.</h2><p>Tap “Add a win” to get the board started.</p></div></div>`;
-      document.querySelector('#winCount').textContent=wins.length;
-      document.querySelector('#departmentCount').textContent=new Set(wins.map(w=>w.department.trim().toLowerCase()).filter(Boolean)).size;
-      renderCelebration();
-    }
-
-    function renderCelebration(){
-      const wins=getLiveWins();
-      const dateEl=document.querySelector('#celebrationDate');
-      const textEl=document.querySelector('#celebrationText');
-      if(!wins.length){
-        textEl.textContent='Your next win starts here.';
-        fitCelebrationText(textEl);
-        document.querySelector('#celebrationName').textContent='';
-        document.querySelector('#celebrationDepartment').textContent='';
-        if(dateEl) dateEl.textContent='';
-        document.querySelector('#celebrationCounter').textContent='0 wins';
-        return;
-      }
-      if(celIndex>=wins.length)celIndex=0;
-      const w=wins[celIndex];
-      textEl.textContent=w.text;
-      fitCelebrationText(textEl);
-      document.querySelector('#celebrationName').textContent=w.name;
-      document.querySelector('#celebrationDepartment').textContent=w.department;
-      if(dateEl) dateEl.textContent=parseDate(w.date).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
-      document.querySelector('#celebrationCounter').textContent=`${celIndex+1} of ${wins.length} wins`;
-    }
-
-    async function refresh(){
-      try{ allRows=await Store.all(false); render(); }
-      catch(err){ console.error(err); rowsEl.innerHTML='<div class="empty-board"><div><h2>Couldn’t load wins.</h2><p>Please check the connection and refresh.</p></div></div>'; }
-    }
+    const listView=document.querySelector('#listView'),celView=document.querySelector('#celebrationView'),rowsEl=document.querySelector('#winsRows');const currentMonth=periodFor(new Date());document.querySelector('#displayTitle').textContent=`Our ${currentMonth.monthName} wins`;document.querySelector('#celebrationMonth').textContent=`${currentMonth.monthName} wins`;let allRows=[],celIndex=0,celTimer,idleTimer;
+    function getLiveWins(){return recentWins(allRows,new Date());}
+    function render(){const wins=getLiveWins();rowsEl.innerHTML=wins.length?wins.map(w=>`<article class="win-row"><div class="win-text">${esc(w.text)}</div><div class="win-person">${esc(w.name)}</div><div class="win-team">${esc(w.department)}</div></article>`).join(''):`<div class="empty-board"><div><h2>First win incoming.</h2><p>Tap “Add a win” to get the board started.</p></div></div>`;document.querySelector('#winCount').textContent=wins.length;document.querySelector('#departmentCount').textContent=new Set(wins.map(w=>w.department.trim().toLowerCase()).filter(Boolean)).size;renderCelebration();}
+    function renderCelebration(){const wins=getLiveWins(),dateEl=document.querySelector('#celebrationDate'),textEl=document.querySelector('#celebrationText');if(!wins.length){textEl.textContent='Your next win starts here.';fitCelebrationText(textEl);renderStickers(null,0);document.querySelector('#celebrationName').textContent='';document.querySelector('#celebrationDepartment').textContent='';if(dateEl)dateEl.textContent='';document.querySelector('#celebrationCounter').textContent='0 wins';return;}if(celIndex>=wins.length)celIndex=0;const w=wins[celIndex];textEl.textContent=w.text;fitCelebrationText(textEl);renderStickers(w,celIndex);document.querySelector('#celebrationName').textContent=w.name;document.querySelector('#celebrationDepartment').textContent=w.department;if(dateEl)dateEl.textContent=parseDate(w.date).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});document.querySelector('#celebrationCounter').textContent=`${celIndex+1} of ${wins.length} wins`;}
+    async function refresh(){try{allRows=await Store.all(false);render();}catch(err){console.error(err);rowsEl.innerHTML='<div class="empty-board"><div><h2>Couldn’t load wins.</h2><p>Please check the connection and refresh.</p></div></div>';}}
     function showList(){clearInterval(celTimer);celView.classList.add('is-hidden');listView.classList.remove('is-hidden');resetIdle();}
     function showCelebrate(){clearTimeout(idleTimer);listView.classList.add('is-hidden');celView.classList.remove('is-hidden');renderCelebration();startCelebrationTimer();}
     function startCelebrationTimer(){clearInterval(celTimer);celTimer=setInterval(()=>{const wins=getLiveWins();if(!wins.length)return;celView.classList.add('fade');setTimeout(()=>{celIndex=(celIndex+1)%wins.length;renderCelebration();celView.classList.remove('fade');},450);},(C.celebrationSeconds||9)*1000);}
     function resetIdle(){clearTimeout(idleTimer);idleTimer=setTimeout(showCelebrate,(C.idleSeconds||60)*1000);}
-
-    await refresh();
-    window.addEventListener('resize',()=>fitCelebrationText(document.querySelector('#celebrationText')));
-    ['pointerdown','touchstart','keydown'].forEach(evt=>document.addEventListener(evt,()=>{if(!celView.classList.contains('is-hidden'))showList();else resetIdle();},{passive:true}));
-    document.querySelector('[data-action="celebrate"]').addEventListener('click',e=>{e.stopPropagation();showCelebrate();});
-    if(sb){ sb.channel('wins-display').on('postgres_changes',{event:'*',schema:'public',table:'wins'},()=>refresh()).subscribe(); }
-    resetIdle();
+    await refresh();window.addEventListener('resize',()=>fitCelebrationText(document.querySelector('#celebrationText')));['pointerdown','touchstart','keydown'].forEach(evt=>document.addEventListener(evt,()=>{if(!celView.classList.contains('is-hidden'))showList();else resetIdle();},{passive:true}));document.querySelector('[data-action="celebrate"]').addEventListener('click',e=>{e.stopPropagation();showCelebrate();});if(sb){sb.channel('wins-display').on('postgres_changes',{event:'*',schema:'public',table:'wins'},()=>refresh()).subscribe();}resetIdle();
   }
 
-  function initDisplayMode(){
-    const prompt=document.querySelector('#displayModePrompt');
-    const button=document.querySelector('#enterDisplayMode');
-    if(!prompt||!button)return;
-    const fullscreenElement=()=>document.fullscreenElement||document.webkitFullscreenElement;
-    const updatePrompt=()=>prompt.classList.toggle('is-hidden',!!fullscreenElement());
-    async function enterFullscreen(e){
-      if(e){e.preventDefault();e.stopPropagation();}
-      const el=document.documentElement;button.disabled=true;
-      try{if(el.requestFullscreen) await el.requestFullscreen({navigationUI:'hide'});else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();}
-      catch(err){console.warn('Fullscreen request was blocked by this browser.',err);}
-      finally{button.disabled=false;updatePrompt();}
-    }
-    button.addEventListener('click',enterFullscreen);document.addEventListener('fullscreenchange',updatePrompt);document.addEventListener('webkitfullscreenchange',updatePrompt);updatePrompt();
-  }
-
-  async function initSubmit(){
-    const date=document.querySelector('#winDate'); date.value=isoDate(new Date());
-    const hint=document.querySelector('#periodHint'), text=document.querySelector('#winText'), form=document.querySelector('#winForm'), submitButton=form.querySelector('button[type="submit"]');
-    const errorEl=document.querySelector('#submitError');
-    function updateHint(){ const p=periodFor(date.value||isoDate(new Date())); hint.textContent=`Filed under ${p.monthName} wins. It will appear on the board straight away.`; }
-    function count(){document.querySelector('#charCount').textContent=text.value.length;}
-    date.addEventListener('change',updateHint);text.addEventListener('input',count);updateHint();count();
-    form.addEventListener('submit',async e=>{
-      e.preventDefault();if(errorEl) errorEl.classList.add('is-hidden');
-      const row={text:text.value.trim(),name:document.querySelector('#personName').value.trim(),department:document.querySelector('#department').value.trim(),date:date.value};
-      if(!row.text||!row.name||!row.department||!row.date)return;
-      submitButton.disabled=true;submitButton.textContent='Sharing…';
-      try{await Store.add(row);const p=periodFor(row.date);form.classList.add('is-hidden');document.querySelector('#successMessage').textContent=`Your win has been added to ${p.label} and is now live on the board.`;document.querySelector('#submitSuccess').classList.remove('is-hidden');}
-      catch(err){console.error(err);setError(errorEl,'Something went wrong. Please try again.');}
-      finally{submitButton.disabled=false;submitButton.textContent='Share my win';}
-    });
-    document.querySelector('#submitAnother').addEventListener('click',()=>{form.reset();date.value=isoDate(new Date());updateHint();count();document.querySelector('#submitSuccess').classList.add('is-hidden');form.classList.remove('is-hidden');text.focus();});
-  }
-
+  function initDisplayMode(){const prompt=document.querySelector('#displayModePrompt'),button=document.querySelector('#enterDisplayMode');if(!prompt||!button)return;const fullscreenElement=()=>document.fullscreenElement||document.webkitFullscreenElement;const updatePrompt=()=>prompt.classList.toggle('is-hidden',!!fullscreenElement());async function enterFullscreen(e){if(e){e.preventDefault();e.stopPropagation();}const el=document.documentElement;button.disabled=true;try{if(el.requestFullscreen)await el.requestFullscreen({navigationUI:'hide'});else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();}catch(err){console.warn('Fullscreen request was blocked by this browser.',err);}finally{button.disabled=false;updatePrompt();}}button.addEventListener('click',enterFullscreen);document.addEventListener('fullscreenchange',updatePrompt);document.addEventListener('webkitfullscreenchange',updatePrompt);updatePrompt();}
+  async function initSubmit(){const date=document.querySelector('#winDate');date.value=isoDate(new Date());const hint=document.querySelector('#periodHint'),text=document.querySelector('#winText'),form=document.querySelector('#winForm'),submitButton=form.querySelector('button[type="submit"]'),errorEl=document.querySelector('#submitError');function updateHint(){const p=periodFor(date.value||isoDate(new Date()));hint.textContent=`Filed under ${p.monthName} wins. It will appear on the board straight away.`;}function count(){document.querySelector('#charCount').textContent=text.value.length;}date.addEventListener('change',updateHint);text.addEventListener('input',count);updateHint();count();form.addEventListener('submit',async e=>{e.preventDefault();if(errorEl)errorEl.classList.add('is-hidden');const row={text:text.value.trim(),name:document.querySelector('#personName').value.trim(),department:document.querySelector('#department').value.trim(),date:date.value};if(!row.text||!row.name||!row.department||!row.date)return;submitButton.disabled=true;submitButton.textContent='Sharing…';try{await Store.add(row);const p=periodFor(row.date);form.classList.add('is-hidden');document.querySelector('#successMessage').textContent=`Your win has been added to ${p.label} and is now live on the board.`;document.querySelector('#submitSuccess').classList.remove('is-hidden');}catch(err){console.error(err);setError(errorEl,'Something went wrong. Please try again.');}finally{submitButton.disabled=false;submitButton.textContent='Share my win';}});document.querySelector('#submitAnother').addEventListener('click',()=>{form.reset();date.value=isoDate(new Date());updateHint();count();document.querySelector('#submitSuccess').classList.add('is-hidden');form.classList.remove('is-hidden');text.focus();});}
   function getPeriods(rows){const map=new Map();rows.forEach(r=>{const p=periodFor(r.date);map.set(p.key,p);});const current=periodFor(new Date());map.set(current.key,current);return [...map.values()].sort((a,b)=>b.month-a.month);}
   async function initAdmin(){await startAdmin();}
-  async function startAdmin(){
-    const list=document.querySelector('#adminList'), search=document.querySelector('#adminSearch'), pFilter=document.querySelector('#periodFilter'), dFilter=document.querySelector('#departmentFilter'), sFilter=document.querySelector('#statusFilter');
-    const dialog=document.querySelector('#editDialog'); let editing=null, allRows=[];
-    function fillPeriods(){const periods=getPeriods(allRows);const selected=pFilter.value||'all';pFilter.innerHTML='<option value="all">All months</option>'+periods.map(p=>`<option value="${p.key}">${esc(p.label)}</option>`).join('');pFilter.value=[...pFilter.options].some(o=>o.value===selected)?selected:'all';}
-    function fillDepartments(){const selected=dFilter.value||'all';const deps=[...new Set(allRows.map(r=>r.department).filter(Boolean))].sort((a,b)=>a.localeCompare(b));dFilter.innerHTML='<option value="all">All departments</option>'+deps.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');dFilter.value=[...dFilter.options].some(o=>o.value===selected)?selected:'all';}
-    function render(){fillPeriods();fillDepartments();const q=search.value.trim().toLowerCase();let rows=allRows.filter(r=>{const p=periodFor(r.date);return (pFilter.value==='all'||p.key===pFilter.value)&&(dFilter.value==='all'||r.department===dFilter.value)&&(sFilter.value==='all'||r.status===sFilter.value)&&(!q||`${r.text} ${r.name} ${r.department}`.toLowerCase().includes(q));});document.querySelector('#adminCount').textContent=`${rows.length} win${rows.length===1?'':'s'}`;list.innerHTML=rows.length?rows.map(r=>`<article class="admin-item ${r.status==='hidden'?'is-hidden-win':''}" data-id="${r.id}"><div><h3>${esc(r.text)}</h3><div class="admin-meta">${esc(r.name)} · ${esc(r.department)} · ${parseDate(r.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div></div><div><span class="status-pill ${r.status==='hidden'?'hidden':''}">${r.status}</span></div><div class="admin-actions"><button class="edit">Edit</button><button class="hide">${r.status==='hidden'?'Show':'Hide'}</button><button class="delete">Delete</button></div></article>`).join(''):'<div class="form-card"><h2>No wins found.</h2><p>Try changing the filters.</p></div>';}
-    async function refresh(){try{allRows=await Store.all(true);render();}catch(err){console.error(err);list.innerHTML='<div class="form-card"><h2>Couldn’t load admin data.</h2><p>Please check the connection and try again.</p></div>';}}
-    ['input','change'].forEach(evt=>{search.addEventListener(evt,render);pFilter.addEventListener(evt,render);dFilter.addEventListener(evt,render);sFilter.addEventListener(evt,render);});
-    list.addEventListener('click',async e=>{const item=e.target.closest('.admin-item');if(!item)return;const id=item.dataset.id,row=allRows.find(r=>r.id===id);if(!row)return;if(e.target.classList.contains('edit')){editing=id;document.querySelector('#editText').value=row.text;document.querySelector('#editName').value=row.name;document.querySelector('#editDepartment').value=row.department;document.querySelector('#editDate').value=row.date;dialog.showModal();return;}try{if(e.target.classList.contains('hide')) await Store.update(id,{status:row.status==='hidden'?'active':'hidden'});if(e.target.classList.contains('delete') && confirm('Delete this win permanently?')) await Store.remove(id);await refresh();}catch(err){console.error(err);alert('That change could not be saved.');}});
-    document.querySelector('#editForm').addEventListener('submit',async e=>{if(e.submitter && e.submitter.value==='cancel')return;if(!editing)return;e.preventDefault();try{await Store.update(editing,{text:document.querySelector('#editText').value.trim(),name:document.querySelector('#editName').value.trim(),department:document.querySelector('#editDepartment').value.trim(),date:document.querySelector('#editDate').value});editing=null;dialog.close();await refresh();}catch(err){console.error(err);alert('Changes could not be saved.');}});
-    if(sb){sb.channel('wins-admin').on('postgres_changes',{event:'*',schema:'public',table:'wins'},()=>refresh()).subscribe();}await refresh();
-  }
+  async function startAdmin(){const list=document.querySelector('#adminList'),search=document.querySelector('#adminSearch'),pFilter=document.querySelector('#periodFilter'),dFilter=document.querySelector('#departmentFilter'),sFilter=document.querySelector('#statusFilter'),dialog=document.querySelector('#editDialog');let editing=null,allRows=[];function fillPeriods(){const periods=getPeriods(allRows),selected=pFilter.value||'all';pFilter.innerHTML='<option value="all">All months</option>'+periods.map(p=>`<option value="${p.key}">${esc(p.label)}</option>`).join('');pFilter.value=[...pFilter.options].some(o=>o.value===selected)?selected:'all';}function fillDepartments(){const selected=dFilter.value||'all',deps=[...new Set(allRows.map(r=>r.department).filter(Boolean))].sort((a,b)=>a.localeCompare(b));dFilter.innerHTML='<option value="all">All departments</option>'+deps.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');dFilter.value=[...dFilter.options].some(o=>o.value===selected)?selected:'all';}function render(){fillPeriods();fillDepartments();const q=search.value.trim().toLowerCase();let rows=allRows.filter(r=>{const p=periodFor(r.date);return(pFilter.value==='all'||p.key===pFilter.value)&&(dFilter.value==='all'||r.department===dFilter.value)&&(sFilter.value==='all'||r.status===sFilter.value)&&(!q||`${r.text} ${r.name} ${r.department}`.toLowerCase().includes(q));});document.querySelector('#adminCount').textContent=`${rows.length} win${rows.length===1?'':'s'}`;list.innerHTML=rows.length?rows.map(r=>`<article class="admin-item ${r.status==='hidden'?'is-hidden-win':''}" data-id="${r.id}"><div><h3>${esc(r.text)}</h3><div class="admin-meta">${esc(r.name)} · ${esc(r.department)} · ${parseDate(r.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div></div><div><span class="status-pill ${r.status==='hidden'?'hidden':''}">${r.status}</span></div><div class="admin-actions"><button class="edit">Edit</button><button class="hide">${r.status==='hidden'?'Show':'Hide'}</button><button class="delete">Delete</button></div></article>`).join(''):'<div class="form-card"><h2>No wins found.</h2><p>Try changing the filters.</p></div>';}async function refresh(){try{allRows=await Store.all(true);render();}catch(err){console.error(err);list.innerHTML='<div class="form-card"><h2>Couldn’t load admin data.</h2><p>Please check the connection and try again.</p></div>';}}['input','change'].forEach(evt=>{search.addEventListener(evt,render);pFilter.addEventListener(evt,render);dFilter.addEventListener(evt,render);sFilter.addEventListener(evt,render);});list.addEventListener('click',async e=>{const item=e.target.closest('.admin-item');if(!item)return;const id=item.dataset.id,row=allRows.find(r=>r.id===id);if(!row)return;if(e.target.classList.contains('edit')){editing=id;document.querySelector('#editText').value=row.text;document.querySelector('#editName').value=row.name;document.querySelector('#editDepartment').value=row.department;document.querySelector('#editDate').value=row.date;dialog.showModal();return;}try{if(e.target.classList.contains('hide'))await Store.update(id,{status:row.status==='hidden'?'active':'hidden'});if(e.target.classList.contains('delete')&&confirm('Delete this win permanently?'))await Store.remove(id);await refresh();}catch(err){console.error(err);alert('That change could not be saved.');}});document.querySelector('#editForm').addEventListener('submit',async e=>{if(e.submitter&&e.submitter.value==='cancel')return;if(!editing)return;e.preventDefault();try{await Store.update(editing,{text:document.querySelector('#editText').value.trim(),name:document.querySelector('#editName').value.trim(),department:document.querySelector('#editDepartment').value.trim(),date:document.querySelector('#editDate').value});editing=null;dialog.close();await refresh();}catch(err){console.error(err);alert('Changes could not be saved.');}});if(sb){sb.channel('wins-admin').on('postgres_changes',{event:'*',schema:'public',table:'wins'},()=>refresh()).subscribe();}await refresh();}
   window.WinsApp={initDisplay,initDisplayMode,initSubmit,initAdmin,periodFor,Store};
 })();
