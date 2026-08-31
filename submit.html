@@ -7,19 +7,24 @@
   <title>Share a Win — Forty Winks</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260813-rolling30" />
+  <link rel="stylesheet" href="styles.css?v=20260831-values1" />
+  <style>
+    .emoji-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.emoji-button{border:1px solid rgba(18,31,162,.18);background:#fff;border-radius:999px;padding:7px 11px;font-size:20px;cursor:pointer}.emoji-button:hover{background:#e0f2ff}.optional-note{font-weight:500;opacity:.55}.photo-input{padding:14px;background:#fff;border:1px dashed rgba(18,31,162,.3);border-radius:12px}.value-select{width:100%}
+  </style>
 </head>
 <body class="form-page"><main class="form-shell">
   <div class="form-topbar"><a class="mini-brand" href="index.html">FORTY WINKS <span>WINS</span></a><a class="return-main" href="index.html">← Return to main screen</a></div>
   <section class="form-card"><p class="eyebrow">Good things deserve airtime.</p><h1>What’s your win?</h1><p class="form-intro">Big, small, team effort or personal milestone — share it and we’ll put it on the office board.</p>
     <form id="winForm" class="win-form">
-      <label>Your win<textarea id="winText" required maxlength="220" placeholder="Tell us what happened…"></textarea><span class="field-help"><span id="charCount">0</span>/220</span></label>
+      <label>Your win<textarea id="winText" required maxlength="220" placeholder="Tell us what happened…"></textarea><span class="field-help"><span id="charCount">0</span>/220</span><div class="emoji-row" aria-label="Add an emoji"><button class="emoji-button" type="button">🎉</button><button class="emoji-button" type="button">👏</button><button class="emoji-button" type="button">🙌</button><button class="emoji-button" type="button">💙</button><button class="emoji-button" type="button">🔥</button><button class="emoji-button" type="button">⭐</button><button class="emoji-button" type="button">🚀</button><button class="emoji-button" type="button">🏆</button><button class="emoji-button" type="button">💪</button><button class="emoji-button" type="button">😴</button></div></label>
       <div class="form-grid"><label>Your name<input id="personName" type="text" required maxlength="80" placeholder="Jane Smith" /></label><label>Your department<input id="department" type="text" required maxlength="60" placeholder="e.g. Marketing" /></label></div>
+      <label>Brand value <span class="optional-note">(optional)</span><select id="brandValue" class="value-select"><option value="">No value selected</option><option>BOLDLY AUTHENTIC</option><option>PLAYFULLY INSPIRING</option><option>UNDENIABLY FAMILY</option><option>RELENTLESSLY INNOVATIVE</option><option>PERSONAL</option></select></label>
+      <label>Add a photo <span class="optional-note">(optional)</span><input id="winPhoto" class="photo-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" /><span class="field-help">One image, up to 10 MB.</span></label>
       <label>Date of the win<input id="winDate" type="date" required /><span id="periodHint" class="field-help"></span></label>
       <p id="submitError" class="form-error is-hidden"></p><button class="submit-button" type="submit">Share my win</button>
     </form>
     <div id="submitSuccess" class="success-panel is-hidden" role="status"><div class="success-icon">✓</div><h2>Nice one.</h2><p id="successMessage"></p><div class="success-actions"><button id="submitAnother" class="secondary-button">Share another win</button><a class="return-main secondary-button" href="index.html">Return to main screen</a></div></div>
   </section>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js?v=20260813-rolling30"></script><script src="app.js?v=20260813-rolling30"></script><script>WinsApp.initSubmit();</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js?v=20260831-values1"></script><script src="app.js?v=20260831-values1"></script><script>WinsApp.initSubmit();</script>
 </body></html>
