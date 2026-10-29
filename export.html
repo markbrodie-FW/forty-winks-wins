@@ -10,7 +10,25 @@ const date=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const fmt=s=>date(s).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
 const month=s=>date(s).toLocaleDateString('en-AU',{month:'long',year:'numeric'});
 const today=new Date(),iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
-let wins=[];
+let wins=[];const imageCache=new Map();
+async function compactImage(url){
+ if(imageCache.has(url))return imageCache.get(url);
+ const task=(async()=>{try{
+  const response=await fetch(url,{mode:'cors'});if(!response.ok)throw new Error('Image fetch failed');
+  const blob=await response.blob();const bitmap=await createImageBitmap(blob);
+  const scale=Math.min(1,1100/Math.max(bitmap.width,bitmap.height));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+  return canvas.toDataURL('image/jpeg',0.72);
+ }catch(e){console.warn('Could not compress image for export',e);return url}})();
+ imageCache.set(url,task);return task;
+}
+async function prepareImages(){
+ const imgs=[...body.querySelectorAll('img.report-photo')];
+ if(!imgs.length)return;
+ msg.textContent='Optimising '+imgs.length+' photos for PDF…';
+ await Promise.all(imgs.map(async img=>{const url=img.dataset.original||img.src;img.dataset.original=url;img.src=await compactImage(url)}));
+}
 function render(){
 const a=from.value,b=to.value;if(a&&b&&a>b){msg.textContent='The from date must be before the to date.';body.innerHTML='';byId('printReport').disabled=true;return}
 const filtered=wins.filter(w=>(hidden.checked||w.status!=='hidden')&&(!a||w.date>=a)&&(!b||w.date<=b)).sort((x,y)=>y.date.localeCompare(x.date)||x.name.localeCompare(y.name));
@@ -23,7 +41,7 @@ let last='';body.innerHTML=filtered.map(w=>{const m=month(w.date);let heading=''
 [from,to,hidden,photos].forEach(el=>el.addEventListener('change',render));
 byId('allDates').addEventListener('click',()=>{from.value='';to.value='';render()});
 byId('thisMonth').addEventListener('click',()=>{from.value=iso(new Date(today.getFullYear(),today.getMonth(),1));to.value=iso(today);render()});
-byId('printReport').addEventListener('click',async()=>{const imgs=[...body.querySelectorAll('img')];await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,2500)})));window.print()});
+byId('printReport').addEventListener('click',async()=>{const btn=byId('printReport');btn.disabled=true;try{await prepareImages();const imgs=[...body.querySelectorAll('img')];await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,2500)})));msg.textContent='Photos optimised. Opening print dialog…';window.print()}finally{btn.disabled=false}});
 try{wins=await WinsApp.Store.all(true);render()}catch(e){msg.textContent='Could not load wins. Please refresh and try again.';byId('printReport').disabled=true;console.error(e)}
 })();
 </script></body></html>
